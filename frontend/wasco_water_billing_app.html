@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WASCO Water Billing Portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#1565C0;--blue-light:#E3F2FD;--blue-mid:#1976D2;--teal:#00695C;--teal-light:#E0F2F1;--amber:#F57F17;--amber-light:#FFF8E1;--red:#C62828;--red-light:#FFEBEE;--green:#2E7D32;--green-light:#E8F5E9;--gray:#455A64;--gray-light:#ECEFF1;--border:0.5px solid var(--color-border-tertiary)}
+body{font-family:var(--font-sans);background:var(--color-background-tertiary);min-height:100vh}
+.app{display:flex;flex-direction:column;min-height:100vh}
+
+/* NAV */
+.topbar{background:var(--blue);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:56px;flex-shrink:0}
+.topbar-logo{display:flex;align-items:center;gap:10px;color:#fff}
+.topbar-logo .drop{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center}
+.topbar-logo span{font-size:16px;font-weight:500;letter-spacing:0.3px}
+.topbar-nav{display:flex;gap:4px}
+.nav-pill{padding:6px 14px;border-radius:20px;border:none;background:transparent;color:rgba(255,255,255,0.75);font-size:13px;cursor:pointer;transition:all .15s}
+.nav-pill:hover{background:rgba(255,255,255,0.15);color:#fff}
+.nav-pill.active{background:rgba(255,255,255,0.2);color:#fff;font-weight:500}
+.topbar-user{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.9);font-size:13px;cursor:pointer}
+.avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#fff}
+
+/* VIEWS */
+.view{display:none;flex:1;padding:1.5rem;gap:1.5rem;flex-direction:column}
+.view.active{display:flex}
+
+/* CARDS */
+.card{background:var(--color-background-primary);border:var(--border);border-radius:var(--border-radius-lg);padding:1.25rem}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.card-title{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.card-sub{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+
+/* METRICS */
+.metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem}
+.metric-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.metric-value{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.metric-sub{font-size:11px;margin-top:3px}
+.metric-sub.up{color:var(--green)}
+.metric-sub.down{color:var(--red)}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{text-align:left;padding:8px 12px;font-size:12px;font-weight:500;color:var(--color-text-secondary);border-bottom:var(--border);background:var(--color-background-secondary)}
+.data-table td{padding:10px 12px;border-bottom:var(--border);color:var(--color-text-primary);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--color-background-secondary)}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-paid{background:var(--green-light);color:var(--green)}
+.badge-pending{background:var(--amber-light);color:var(--amber)}
+.badge-overdue{background:var(--red-light);color:var(--red)}
+.badge-active{background:var(--teal-light);color:var(--teal)}
+
+/* FORMS */
+.form-group{margin-bottom:1rem}
+.form-label{font-size:13px;color:var(--color-text-secondary);margin-bottom:5px;display:block}
+input,select{width:100%;border:var(--border);border-radius:var(--border-radius-md);padding:9px 12px;font-size:14px;background:var(--color-background-primary);color:var(--color-text-primary);outline:none;font-family:var(--font-sans)}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(21,101,192,0.15)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--border-radius-md);border:var(--border);background:transparent;color:var(--color-text-primary);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;font-family:var(--font-sans)}
+.btn:hover{background:var(--color-background-secondary)}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:var(--blue-mid);border-color:var(--blue-mid)}
+.btn-danger{background:var(--red-light);color:var(--red);border-color:transparent}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* GRID LAYOUTS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem}
+@media(max-width:700px){.two-col,.three-col{grid-template-columns:1fr}}
+
+/* USAGE BAR */
+.usage-bar-wrap{margin:8px 0 4px}
+.usage-bar-bg{height:8px;background:var(--gray-light);border-radius:4px;overflow:hidden}
+.usage-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+
+/* BILL ITEM */
+.bill-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:var(--border)}
+.bill-item:last-child{border-bottom:none}
+.bill-month{font-size:13px;font-weight:500}
+.bill-units{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+.bill-amount{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+
+/* CHART BARS */
+.chart-wrap{display:flex;align-items:flex-end;gap:8px;height:120px;padding:8px 0 0}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar-box{width:100%;border-radius:3px 3px 0 0;transition:height .4s;cursor:default}
+.bar-label{font-size:10px;color:var(--color-text-secondary)}
+.bar-val{font-size:10px;color:var(--color-text-secondary)}
+
+/* RATE TABLE */
+.rate-tier{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:var(--border)}
+.rate-tier:last-child{border-bottom:none}
+.rate-range{font-size:13px;color:var(--color-text-primary)}
+.rate-cost{font-size:13px;font-weight:500;color:var(--blue)}
+
+/* LOGIN */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:80vh}
+.login-card{width:380px;max-width:100%}
+.login-logo{text-align:center;margin-bottom:1.5rem}
+.login-logo .drop-lg{width:56px;height:56px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.login-logo h1{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.login-logo p{font-size:13px;color:var(--color-text-secondary);margin-top:4px}
+.role-tabs{display:flex;border:var(--border);border-radius:var(--border-radius-md);overflow:hidden;margin-bottom:1.25rem}
+.role-tab{flex:1;padding:8px;text-align:center;font-size:12px;cursor:pointer;border-right:var(--border);background:var(--color-background-secondary);color:var(--color-text-secondary);transition:all .15s}
+.role-tab:last-child{border-right:none}
+.role-tab.active{background:var(--blue);color:#fff;font-weight:500}
+
+/* DISTRICT MAP LEGEND */
+.district-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.district-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);font-size:12px}
+.district-name{color:var(--color-text-primary);font-weight:500}
+.district-count{color:var(--color-text-secondary)}
+
+/* NOTIFICATION BADGE */
+.notif{background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:500;margin-left:4px}
+
+/* SECTION TITLE */
+.section-title{font-size:18px;font-weight:500;color:var(--color-text-primary)}
+.section-sub{font-size:13px;color:var(--color-text-secondary);margin-top:2px}
+
+/* TABS inside page */
+.tab-row{display:flex;gap:4px;border-bottom:var(--border);margin-bottom:1.25rem}
+.tab-btn{padding:8px 16px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-0.5px;font-family:var(--font-sans)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:500}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;z-index:100}
+.modal-bg.open{display:flex}
+.modal{background:var(--color-background-primary);border-radius:var(--border-radius-lg);padding:1.5rem;width:480px;max-width:calc(100vw - 2rem);border:var(--border)}
+.modal-title{font-size:16px;font-weight:500;margin-bottom:1.25rem;color:var(--color-text-primary)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem}
+
+/* LEAKAGE REPORT */
+.leak-item{display:flex;gap:12px;padding:10px 0;border-bottom:var(--border);align-items:flex-start}
+.leak-icon{width:32px;height:32px;border-radius:var(--border-radius-md);background:var(--red-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.leak-info .leak-loc{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.leak-info .leak-date{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#fff;padding:10px 18px;border-radius:var(--border-radius-md);font-size:13px;font-weight:500;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* SERVICES PAGE */
+.service-card{text-align:center;padding:1.5rem 1rem}
+.service-icon{width:48px;height:48px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.service-name{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.service-desc{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+
+/* PAYMENT MODAL */
+.payment-steps{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem}
+.step-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;background:var(--gray-light);color:var(--color-text-secondary)}
+.step-dot.done{background:var(--green);color:#fff}
+.step-dot.active{background:var(--blue);color:#fff}
+.step-line{flex:1;height:1px;background:var(--gray-light)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="drop">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+    </div>
+    <span>WASCO Portal</span>
+  </div>
+  <div class="topbar-nav" id="mainNav">
+    <button class="nav-pill active" onclick="showView('login')">Login</button>
+    <button class="nav-pill" onclick="showView('public')">Services</button>
+    <button class="nav-pill" onclick="requestLogin('customer')">My Account</button>
+    <button class="nav-pill" onclick="requestLogin('admin')">Admin</button>
+    <button class="nav-pill" onclick="requestLogin('manager')">Branch Manager</button>
+  </div>
+  <div class="topbar-user" id="topbarUser" style="display:none" onclick="requestLogin('customer')">
+    <div class="avatar" id="topbarAvatar">U</div>
+    <span id="topbarUserName">User</span>
+  </div>
+</div>
+
+<!-- ====== LOGIN VIEW ====== -->
+<div class="view active" id="view-login">
+  <div class="login-wrap">
+    <div class="login-card card">
+      <div class="login-logo">
+        <div class="drop-lg"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
+        <h1>WASCO Online Portal</h1>
+        <p>Water &amp; Sewerage Company — Lesotho</p>
+      </div>
+      <div class="role-tabs">
+        <div class="role-tab active" data-role="customer" onclick="selectRole(this,'customer')">Customer</div>
+        <div class="role-tab" data-role="admin" onclick="selectRole(this,'admin')">Admin</div>
+        <div class="role-tab" data-role="manager" onclick="selectRole(this,'manager')">Branch Manager</div>
+      </div>
+      <div id="loginRolePrompt" style="font-size:12px;color:var(--color-text-secondary);margin-bottom:1rem">Login as Customer</div>
+      <div class="form-group"><label class="form-label">Email address</label><input type="email" placeholder="e.g. thabiso@example.com" id="loginEmail"/></div>
+      <div class="form-group"><label class="form-label">Password</label><input type="password" placeholder="Enter password" id="loginPassword"/></div>
+      <div style="margin-bottom:1rem;text-align:right"><a style="font-size:12px;color:var(--blue);cursor:pointer" onclick="showToast('Please contact support to reset your password')">Forgot password?</a></div>
+      <button class="btn btn-primary" style="width:100%" type="button" onclick="doLogin()">Sign in</button>
+      <div id="registerHint" style="text-align:center;margin-top:1rem;font-size:12px;color:var(--color-text-secondary)">New customer? <a style="color:var(--blue);cursor:pointer" onclick="toggleRegister(true)">Register your account</a></div>
+      <div id="registerSection" style="display:none;margin-top:1rem;border-top:var(--border);padding-top:1rem">
+        <div class="form-group"><label class="form-label">Full name</label><input type="text" placeholder="Full name" id="registerName"/></div>
+        <div class="form-group"><label class="form-label">Account number</label><input type="text" placeholder="e.g. WAS-00423" id="registerAccount"/></div>
+        <div class="form-group"><label class="form-label">Email address</label><input type="email" placeholder="you@example.com" id="registerEmail"/></div>
+        <div class="form-group"><label class="form-label">Password</label><input type="password" placeholder="Create password" id="registerPassword"/></div>
+        <div class="form-group"><label class="form-label">Confirm password</label><input type="password" placeholder="Confirm password" id="registerConfirmPassword"/></div>
+        <button class="btn btn-primary" style="width:100%" type="button" onclick="doRegister()">Create account</button>
+        <div style="text-align:center;margin-top:0.75rem;font-size:12px;color:var(--color-text-secondary)">Already registered? <a style="color:var(--blue);cursor:pointer" onclick="toggleRegister(false)">Sign in</a></div>
+      </div>
+      <div style="border-top:var(--border);margin-top:1.25rem;padding-top:1rem;text-align:center">
+        <p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">Continue without an account</p>
+        <button class="btn btn-sm" style="width:100%" onclick="showView('public')">Browse public services →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PUBLIC VIEW ====== -->
+<div class="view" id="view-public">
+  <div>
+    <div class="section-title">Water &amp; Sewerage Services</div>
+    <div class="section-sub">Available services for all customers across Lesotho districts</div>
+  </div>
+  <div class="three-col">
+    <div class="card service-card"><div class="service-icon" style="background:var(--blue-light)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1565C0" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><div class="service-name">Water Supply</div><div class="service-desc">Reliable clean water supply to all households and businesses across all 10 districts of Lesotho.</div></div>
+    <div class="card service-card"><div class="service-icon" style="background:var(--teal-light)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00695C" stroke-width="2"><path d="M4 4h16v16H4zM4 12h16"/></svg></div><div class="service-name">Sewerage &amp; Sanitation</div><div class="service-desc">Comprehensive sewage management and sanitation infrastructure serving urban and peri-urban areas.</div></div>
+    <div class="card service-card"><div class="service-icon" style="background:var(--amber-light)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F57F17" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="service-name">New Connection</div><div class="service-desc">Apply for a new water or sewerage connection. Residential, commercial and institutional applications welcome.</div></div>
+    <div class="card service-card"><div class="service-icon" style="background:var(--red-light)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C62828" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="service-name">Report a Leakage</div><div class="service-desc">Report water pipe leakages or sewage overflows in your area. Available for registered and unregistered users.</div><button class="btn btn-sm" style="margin-top:12px" onclick="openLeakModal()">Report now</button></div>
+    <div class="card service-card"><div class="service-icon" style="background:var(--green-light)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="service-name">Bill Enquiry</div><div class="service-desc">Check your outstanding water bill balance. You need your account number to proceed.</div></div>
+    <div class="card service-card"><div class="service-icon" style="background:var(--blue-light)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1565C0" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="service-name">Online Payment</div><div class="service-desc">Pay your water bills securely online via EcoCash, bank card, or bank transfer. Fast and convenient.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div><div class="card-title">Water billing rates — current tariff schedule</div><div class="card-sub">Effective 1 January 2026 | All amounts in Lesotho Loti (LSL)</div></div></div>
+    <div class="rate-tier"><span class="rate-range">Tier 1 — 0 to 6 m³/month (Lifeline)</span><span class="rate-cost">LSL 3.50 / m³</span></div>
+    <div class="rate-tier"><span class="rate-range">Tier 2 — 7 to 20 m³/month (Domestic basic)</span><span class="rate-cost">LSL 7.20 / m³</span></div>
+    <div class="rate-tier"><span class="rate-range">Tier 3 — 21 to 50 m³/month (Domestic standard)</span><span class="rate-cost">LSL 12.80 / m³</span></div>
+    <div class="rate-tier"><span class="rate-range">Tier 4 — above 50 m³/month (Commercial)</span><span class="rate-cost">LSL 18.50 / m³</span></div>
+    <div class="rate-tier"><span class="rate-range">Sewerage service charge (flat)</span><span class="rate-cost">LSL 45.00 / month</span></div>
+  </div>
+</div>
+
+<!-- ====== CUSTOMER VIEW ====== -->
+<div class="view" id="view-customer">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div><div class="section-title">My Water Account</div><div class="section-sub">Account: <span id="custAccount">—</span> · <span id="custName">—</span> · <span id="custDistrict">—</span></div></div>
+    <button class="btn btn-primary btn-sm" onclick="openPayModal()">Pay outstanding bill</button>
+  </div>
+
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-label">Current balance due</div><div class="metric-value" id="custBalance" style="color:var(--red)">LSL 0.00</div><div class="metric-sub down" id="custBalanceDue">No due date</div></div>
+    <div class="metric"><div class="metric-label">This month's usage</div><div class="metric-value" id="custUsage">0.0 m³</div><div class="metric-sub up" id="custUsageTrend">No usage yet</div></div>
+    <div class="metric"><div class="metric-label">Last payment</div><div class="metric-value" id="custLastPayment" style="font-size:16px">LSL 0.00</div><div class="metric-sub" style="color:var(--color-text-secondary)" id="custLastPaymentDate">—</div></div>
+    <div class="metric"><div class="metric-label">Account status</div><div class="metric-value" style="font-size:15px;margin-top:6px"><span class="badge badge-active" id="custStatus">Active</span></div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Monthly water usage (m³)</div></div>
+      <div class="chart-wrap" id="custChart"></div>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:8px;text-align:center">Last 6 months</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Current billing period</div></div>
+      <div class="form-group" style="margin-bottom:8px"><div class="form-label">Meter reading this month</div><div style="font-size:20px;font-weight:500;color:var(--color-text-primary)">4,821 m³ <span style="font-size:13px;color:var(--color-text-secondary)">(total cumulative)</span></div></div>
+      <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">Usage this period: <strong>18.4 m³</strong> — Tier 2 rate applies</div>
+      <div class="usage-bar-wrap"><div class="form-label" style="display:flex;justify-content:space-between"><span>Usage vs tier threshold</span><span>18.4 / 20 m³</span></div><div class="usage-bar-bg"><div class="usage-bar-fill" style="width:92%;background:var(--amber)"></div></div><div style="font-size:11px;color:var(--amber);margin-top:3px">Approaching Tier 3 threshold</div></div>
+      <div style="margin-top:12px;border-top:var(--border);padding-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--color-text-secondary)">Water charge (18.4 × LSL 7.20)</span><span>LSL 132.48</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--color-text-secondary)">Sewerage flat charge</span><span>LSL 45.00</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--color-text-secondary)">VAT (15%)</span><span>LSL 26.62</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:500;border-top:var(--border);padding-top:8px"><span>Total due</span><span style="color:var(--blue)">LSL 204.10</span></div>
+        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">+ LSL 80.50 carried over from previous bill</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Payment history</div><div class="card-sub">Last 12 months</div></div>
+    <table class="data-table">
+      <thead><tr><th>Bill month</th><th>Units used (m³)</th><th>Amount billed</th><th>Payment date</th><th>Method</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>March 2026</td><td>21.0</td><td>LSL 310.00</td><td>15 Mar 2026</td><td>EcoCash</td><td><span class="badge badge-paid">Paid</span></td></tr>
+        <tr><td>February 2026</td><td>17.8</td><td>LSL 273.60</td><td>12 Feb 2026</td><td>Bank transfer</td><td><span class="badge badge-paid">Paid</span></td></tr>
+        <tr><td>January 2026</td><td>24.3</td><td>LSL 352.80</td><td>08 Jan 2026</td><td>EcoCash</td><td><span class="badge badge-paid">Paid</span></td></tr>
+        <tr><td>December 2025</td><td>29.1</td><td>LSL 398.50</td><td>—</td><td>—</td><td><span class="badge badge-overdue">Overdue</span></td></tr>
+        <tr><td>November 2025</td><td>19.5</td><td>LSL 291.00</td><td>18 Nov 2025</td><td>Card</td><td><span class="badge badge-paid">Paid</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Report a water leakage</div></div>
+    <div class="two-col">
+      <div>
+        <div class="form-group"><label class="form-label">Leakage location / address</label><input type="text" placeholder="e.g. Maseru, Main North Road near LNDC"/></div>
+        <div class="form-group"><label class="form-label">Description</label><input type="text" placeholder="Describe what you observed"/></div>
+      </div>
+      <div>
+        <div class="form-group"><label class="form-label">District</label><select><option>Maseru</option><option>Leribe</option><option>Berea</option><option>Mafeteng</option><option>Mohale's Hoek</option><option>Quthing</option><option>Qacha's Nek</option><option>Mokhotlong</option><option>Thaba-Tseka</option><option>Butha-Buthe</option></select></div>
+        <div class="form-group"><label class="form-label">Urgency</label><select><option>Low — minor drip</option><option>Medium — steady flow</option><option>High — burst pipe</option></select></div>
+      </div>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="showToast('Leakage report submitted successfully')">Submit leakage report</button>
+  </div>
+</div>
+
+<!-- ====== ADMIN VIEW ====== -->
+<div class="view" id="view-admin">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div><div class="section-title">Administrator panel</div><div class="section-sub">Manage customers, billing rates, and payments</div></div>
+    <button class="btn btn-primary btn-sm" onclick="openAddCustomer()">+ Add customer</button>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchAdminTab(this,'tab-customers')">Customers</button>
+    <button class="tab-btn" onclick="switchAdminTab(this,'tab-rates')">Billing rates</button>
+    <button class="tab-btn" onclick="switchAdminTab(this,'tab-payments')">Payments</button>
+    <button class="tab-btn" onclick="switchAdminTab(this,'tab-leakages')">Leakage reports <span class="notif">3</span></button>
+  </div>
+
+  <div id="tab-customers">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Registered customers</div>
+        <input type="text" placeholder="Search by name or account..." style="width:220px" oninput="filterTable(this,'custTable')"/>
+      </div>
+      <table class="data-table" id="custTable">
+        <thead><tr><th>ID</th><th>Account no.</th><th>First name</th><th>Last name</th><th>Email</th><th>Phone</th><th>District</th><th>Registered</th><th>Actions</th></tr></thead>
+        <tbody id="adminCustomerBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-rates" style="display:none">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Billing rate tiers</div><button class="btn btn-primary btn-sm" onclick="showToast('Rate tier added')">+ Add tier</button></div>
+      <table class="data-table">
+        <thead><tr><th>Tier</th><th>Usage range (m³/month)</th><th>Cost per m³ (LSL)</th><th>Segment</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td>Tier 1</td><td>0 – 6</td><td>3.50</td><td>Lifeline</td><td><button class="btn btn-sm" onclick="showToast('Editing Tier 1')">Edit</button></td></tr>
+          <tr><td>Tier 2</td><td>7 – 20</td><td>7.20</td><td>Domestic basic</td><td><button class="btn btn-sm" onclick="showToast('Editing Tier 2')">Edit</button></td></tr>
+          <tr><td>Tier 3</td><td>21 – 50</td><td>12.80</td><td>Domestic standard</td><td><button class="btn btn-sm" onclick="showToast('Editing Tier 3')">Edit</button></td></tr>
+          <tr><td>Tier 4</td><td>50+</td><td>18.50</td><td>Commercial</td><td><button class="btn btn-sm">Edit</button></td></tr>
+          <tr><td>Sewerage</td><td>Flat rate</td><td>45.00 (flat)</td><td>All customers</td><td><button class="btn btn-sm">Edit</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-payments" style="display:none">
+    <div class="card">
+      <div class="card-header"><div class="card-title">All payment transactions</div><select style="width:160px"><option>All districts</option><option>Maseru</option><option>Leribe</option><option>Mafeteng</option></select></div>
+      <table class="data-table">
+        <thead><tr><th>Transaction ID</th><th>Account</th><th>Customer</th><th>Amount (LSL)</th><th>Date</th><th>Method</th><th>Status</th></tr></thead>
+        <tbody id="adminPaymentsBody">
+        <tr><td colspan="7" style="text-align:center;color:var(--color-text-secondary)">Payments are saved in Firebase and loaded separately.</td></tr>
+      </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-leakages" style="display:none">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Leakage reports</div><span class="badge badge-overdue">3 unresolved</span></div>
+      <div class="leak-item"><div class="leak-icon">!</div><div class="leak-info"><div class="leak-loc">Maseru, Main North Road — burst pipe near LNDC gate</div><div class="leak-date">Reported 9 Apr 2026 · High urgency · <span style="color:var(--red)">Unresolved</span></div></div><button class="btn btn-sm" onclick="showToast('Marked as resolved')">Resolve</button></div>
+      <div class="leak-item"><div class="leak-icon">!</div><div class="leak-info"><div class="leak-loc">Qoaling, Block C — leaking meter box on street</div><div class="leak-date">Reported 7 Apr 2026 · Medium urgency · <span style="color:var(--red)">Unresolved</span></div></div><button class="btn btn-sm" onclick="showToast('Marked as resolved')">Resolve</button></div>
+      <div class="leak-item"><div class="leak-icon">!</div><div class="leak-info"><div class="leak-loc">Hlotse, Leribe — continuous drip behind community tap</div><div class="leak-date">Reported 5 Apr 2026 · Low urgency · <span style="color:var(--red)">Unresolved</span></div></div><button class="btn btn-sm" onclick="showToast('Marked as resolved')">Resolve</button></div>
+      <div class="leak-item" style="opacity:0.6"><div class="leak-icon" style="background:var(--green-light)">✓</div><div class="leak-info"><div class="leak-loc">Mafeteng — broken main at roundabout</div><div class="leak-date">Reported 1 Apr 2026 · <span style="color:var(--green)">Resolved</span></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== BRANCH MANAGER VIEW ====== -->
+<div class="view" id="view-manager">
+  <div><div class="section-title">Branch manager dashboard</div><div class="section-sub">WASCO — Maseru District Branch · Water usage &amp; billing insights</div></div>
+
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+    <select style="width:140px"><option>April 2026</option><option>March 2026</option><option>Q1 2026</option><option>2025 Annual</option></select>
+    <select style="width:140px"><option>All districts</option><option>Maseru</option><option>Leribe</option><option>Berea</option><option>Mafeteng</option></select>
+  </div>
+
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-label">Total customers</div><div class="metric-value" id="managerTotalCustomers">0</div><div class="metric-sub up" id="managerCustomerTrend">No change</div></div>
+    <div class="metric"><div class="metric-label">Total water billed (m³)</div><div class="metric-value" id="managerTotalUsage">0</div><div class="metric-sub up" id="managerUsageTrend">No data</div></div>
+    <div class="metric"><div class="metric-label">Revenue collected</div><div class="metric-value" id="managerRevenue">LSL 0.00</div><div class="metric-sub up" id="managerRevenueTrend">No data</div></div>
+    <div class="metric"><div class="metric-label">Outstanding balances</div><div class="metric-value" id="managerOutstanding" style="color:var(--red);font-size:16px">LSL 0.00</div><div class="metric-sub down" id="managerOutstandingTrend">No data</div></div>
+    <div class="metric"><div class="metric-label">Payment rate</div><div class="metric-value" id="managerPaymentRate">0%</div><div class="metric-sub up" id="managerPaymentTrend">No data</div></div>
+    <div class="metric"><div class="metric-label">Active leakage reports</div><div class="metric-value" id="managerLeakageCount" style="color:var(--amber)">0</div><div class="metric-sub down" id="managerLeakageTrend">No data</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Monthly water usage trend (m³ thousands)</div></div>
+      <div class="chart-wrap" id="mgChart"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Customers by district</div></div>
+      <div id="managerDistrictList" class="district-list" style="margin-top:4px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Usage by customer segment</div></div>
+    <table class="data-table">
+      <thead><tr><th>Segment</th><th>Customers</th><th>Avg usage (m³)</th><th>Avg bill (LSL)</th><th>Payment rate</th><th>Revenue share</th></tr></thead>
+      <tbody id="managerSegmentBody">
+        <tr><td colspan="6" style="text-align:center;color:var(--color-text-secondary)">No segment data available yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-bg" id="payModal">
+  <div class="modal">
+    <div class="modal-title">Pay outstanding balance — WAS-00423</div>
+    <div class="payment-steps">
+      <div class="step-dot active" id="ps1">1</div><div class="step-line"></div>
+      <div class="step-dot" id="ps2">2</div><div class="step-line"></div>
+      <div class="step-dot" id="ps3">3</div>
+    </div>
+    <div id="payStep1">
+      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--color-text-secondary)">Current bill (April 2026)</span><span>LSL 204.10</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--color-text-secondary)">Previous balance</span><span>LSL 80.50</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:500;border-top:var(--border);padding-top:8px"><span>Total due</span><span style="color:var(--blue)">LSL 284.60</span></div>
+      </div>
+      <div class="form-group"><label class="form-label">Payment method</label><select id="payMethod"><option>EcoCash</option><option>Bank card (Visa/Mastercard)</option><option>Bank transfer</option></select></div>
+      <div class="form-group"><label class="form-label">Amount to pay (LSL)</label><input type="number" value="284.60" id="payAmt"/></div>
+    </div>
+    <div id="payStep2" style="display:none">
+      <div class="form-group"><label class="form-label">EcoCash mobile number</label><input type="text" placeholder="+266 5X XXX XXX"/></div>
+      <div class="form-group"><label class="form-label">PIN (entered on your phone)</label><input type="password" placeholder="Enter your EcoCash PIN"/></div>
+      <div style="font-size:12px;color:var(--color-text-secondary);padding:8px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">Payments are processed securely via WASCO's encrypted payment gateway. Your PIN is never stored.</div>
+    </div>
+    <div id="payStep3" style="display:none;text-align:center;padding:1rem 0">
+      <div style="width:48px;height:48px;border-radius:50%;background:var(--green-light);margin:0 auto 12px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="font-size:16px;font-weight:500;margin-bottom:6px">Payment successful</div>
+      <div style="font-size:13px;color:var(--color-text-secondary)">LSL 284.60 paid via EcoCash · Ref: TXN-8844</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closePayModal()">Cancel</button>
+      <button class="btn btn-primary" id="payNextBtn" onclick="payNext()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CUSTOMER MODAL -->
+<div class="modal-bg" id="addCustModal">
+  <div class="modal">
+    <div class="modal-title">Add new customer</div>
+    <div class="two-col">
+      <div class="form-group"><label class="form-label">Account number</label><input id="addCustAccount" type="text" placeholder="e.g. WAS-00423"/></div>
+      <div class="form-group"><label class="form-label">Email address</label><input id="addCustEmail" type="email" placeholder="customer@email.com"/></div>
+    </div>
+    <div class="two-col">
+      <div class="form-group"><label class="form-label">First name</label><input id="addCustFirstName" type="text" placeholder="First name"/></div>
+      <div class="form-group"><label class="form-label">Last name</label><input id="addCustLastName" type="text" placeholder="Last name"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Physical address</label><input id="addCustAddress" type="text" placeholder="Street, area"/></div>
+    <div class="two-col">
+      <div class="form-group"><label class="form-label">District</label><select id="addCustDistrict"><option>Maseru</option><option>Leribe</option><option>Berea</option><option>Mafeteng</option><option>Mohale's Hoek</option><option>Quthing</option><option>Qacha's Nek</option><option>Mokhotlong</option><option>Thaba-Tseka</option><option>Butha-Buthe</option></select></div>
+      <div class="form-group"><label class="form-label">Phone number</label><input id="addCustPhone" type="text" placeholder="+266 5X XXX XXX"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Temporary password</label><input id="addCustPassword" type="password" placeholder="Create initial password"/></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeAddCustomerModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdminCustomer()">Save customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEAK REPORT MODAL -->
+<div class="modal-bg" id="leakModal">
+  <div class="modal">
+    <div class="modal-title">Report a water leakage</div>
+    <div class="form-group"><label class="form-label">Your name (optional)</label><input type="text" placeholder="Full name"/></div>
+    <div class="form-group"><label class="form-label">Leakage location</label><input type="text" placeholder="Address or landmark"/></div>
+    <div class="form-group"><label class="form-label">District</label><select><option>Maseru</option><option>Leribe</option><option>Berea</option><option>Mafeteng</option><option>Mohale's Hoek</option><option>Quthing</option><option>Qacha's Nek</option><option>Mokhotlong</option><option>Thaba-Tseka</option><option>Butha-Buthe</option></select></div>
+    <div class="form-group"><label class="form-label">Description</label><input type="text" placeholder="What you observed"/></div>
+    <div class="form-group"><label class="form-label">Urgency</label><select><option>Low — minor drip</option><option>Medium — steady flow</option><option>High — burst pipe</option></select></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('leakModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('leakModal').classList.remove('open');showToast('Leakage report submitted. Thank you!')">Submit report</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var currentRole='customer';
+var payStep=1;
+const API_BASE = 'http://127.0.0.1:5000';
+
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-pill').forEach(el=>el.classList.remove('active'));
+  var map={login:0,public:1,customer:2,admin:3,manager:4};
+  document.querySelectorAll('.nav-pill')[map[v]].classList.add('active');
+  if(v==='admin') loadAdminCustomers();
+}
+
+function requestLogin(role){
+  currentRole = role;
+  document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active'));
+  var tab = document.querySelector('.role-tab[data-role="'+role+'"]');
+  if(tab) tab.classList.add('active');
+  updateLoginTexts();
+  toggleRegister(false);
+  showView('login');
+}
+
+function selectRole(el,role){
+  document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  currentRole=role;
+  updateLoginTexts();
+}
+
+function doLogin(){
+  if (window.firebaseSignIn) {
+    window.firebaseSignIn();
+  } else {
+    showToast('Firebase not initialized yet. Please wait.');
+  }
+}
+
+function updateLoginTexts(){
+  var prompt = document.getElementById('loginRolePrompt');
+  if(prompt) prompt.textContent = 'Login as ' + (currentRole==='manager' ? 'Branch Manager' : currentRole==='admin' ? 'Administrator' : 'Customer');
+  var hint = document.getElementById('registerHint');
+  if(hint) hint.innerHTML = 'New ' + (currentRole==='manager' ? 'branch manager' : currentRole==='admin' ? 'admin' : 'customer') + ' user? <a style="color:var(--blue);cursor:pointer" onclick="toggleRegister(true)">Register your account</a>';
+}
+
+function toggleRegister(show = true) {
+  var section = document.getElementById('registerSection');
+  section.style.display = show ? 'block' : 'none';
+  if (show) {
+    document.getElementById('loginEmail').focus();
+  }
+}
+
+function switchAdminTab(btn,tabId){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['tab-customers','tab-rates','tab-payments','tab-leakages'].forEach(id=>{
+    var el=document.getElementById(id);
+    if(el) el.style.display=id===tabId?'block':'none';
+  });
+}
+
+function filterTable(input,tableId){
+  var val=input.value.toLowerCase();
+  document.querySelectorAll('#'+tableId+' tbody tr').forEach(row=>{
+    row.style.display=row.textContent.toLowerCase().includes(val)?'':'none';
+  });
+}
+
+function openPayModal(){
+  payStep=1;
+  document.getElementById('payStep1').style.display='block';
+  document.getElementById('payStep2').style.display='none';
+  document.getElementById('payStep3').style.display='none';
+  ['ps1','ps2','ps3'].forEach((id,i)=>{
+    var el=document.getElementById(id);
+    el.className='step-dot'+(i===0?' active':'');
+  });
+  document.getElementById('payNextBtn').style.display='inline-flex';
+  document.getElementById('payModal').classList.add('open');
+}
+function closePayModal(){document.getElementById('payModal').classList.remove('open')}
+
+function payNext(){
+  if(payStep===1){
+    payStep=2;
+    document.getElementById('payStep1').style.display='none';
+    document.getElementById('payStep2').style.display='block';
+    document.getElementById('ps1').className='step-dot done';
+    document.getElementById('ps2').className='step-dot active';
+    document.getElementById('payNextBtn').textContent='Pay now';
+  }else if(payStep===2){
+  payStep=3;
+
+  // ✅ SAVE PAYMENT HERE
+  savePayment();
+
+  document.getElementById('payStep2').style.display='none';
+  document.getElementById('payStep3').style.display='block';
+
+  document.getElementById('ps2').className='step-dot done';
+  document.getElementById('ps3').className='step-dot done';
+
+  document.getElementById('payNextBtn').textContent='Close';
+} else {
+    closePayModal();
+    showToast('Payment of LSL 284.60 confirmed');
+  }
+}
+
+function openAddCustomer(){
+  resetAddCustomerForm();
+  document.getElementById('addCustModal').classList.add('open');
+}
+
+function closeAddCustomerModal(){
+  document.getElementById('addCustModal').classList.remove('open');
+  resetAddCustomerForm();
+}
+
+function resetAddCustomerForm(){
+  ['addCustAccount','addCustEmail','addCustFirstName','addCustLastName','addCustAddress','addCustPhone','addCustPassword'].forEach(id=>{
+    var el=document.getElementById(id);
+    if(el) el.value='';
+  });
+  var district = document.getElementById('addCustDistrict');
+  if(district) district.selectedIndex=0;
+}
+
+async function loadAdminCustomers(){
+  try {
+    const res = await fetch(`${API_BASE}/api/customers`);
+    if (!res.ok) throw new Error('Could not load customers');
+    const customers = await res.json();
+    const body = document.getElementById('adminCustomerBody');
+    body.innerHTML = customers.length ? customers.map(c=>`<tr><td>${c.customer_id}</td><td>${c.account_number}</td><td>${c.first_name}</td><td>${c.last_name}</td><td>${c.email}</td><td>${c.phone||'-'}</td><td>${c.district||'-'}</td><td>${c.date_registered?new Date(c.date_registered).toLocaleDateString():'-'}</td><td><button class="btn btn-sm" onclick="showToast('Customer ${c.first_name} ${c.last_name}')">View</button></td></tr>`).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--color-text-secondary)">No customers found.</td></tr>';
+  } catch (error) {
+    console.error(error);
+    showToast('Unable to load customers: ' + (error.message || 'backend error'));
+  }
+}
+
+async function saveAdminCustomer(){
+  const account = document.getElementById('addCustAccount').value.trim();
+  const email = document.getElementById('addCustEmail').value.trim();
+  const firstName = document.getElementById('addCustFirstName').value.trim();
+  const lastName = document.getElementById('addCustLastName').value.trim();
+  const address = document.getElementById('addCustAddress').value.trim();
+  const district = document.getElementById('addCustDistrict').value;
+  const phone = document.getElementById('addCustPhone').value.trim();
+  const password = document.getElementById('addCustPassword').value.trim();
+
+  if (!account || !email || !firstName || !lastName || !address || !district || !password) {
+    showToast('Complete all customer fields and password');
+    return;
+  }
+
+  try {
+    const customerPayload = {
+      account_number: account,
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      address,
+      district
+    };
+
+    const backendRes = await fetch(`${API_BASE}/api/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(customerPayload)
+    });
+
+    if (!backendRes.ok) {
+      const errorData = await backendRes.json();
+      throw new Error(errorData.error || 'Could not save customer');
+    }
+
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userId = userCredential.user.uid;
+    const userData = {
+      account_number: account,
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      phone,
+      address,
+      district,
+      role: 'customer',
+      created_at: new Date().toISOString()
+    };
+
+    await setDoc(doc(db, 'users', userId), userData);
+    await setDoc(doc(db, 'customers', userId), userData);
+
+    closeAddCustomerModal();
+    showToast('Customer added to Postgres and Firebase');
+    loadAdminCustomers();
+  } catch (error) {
+    console.error(error);
+    showToast('Unable to save customer: ' + (error.message || 'Try again'));
+  }
+}
+
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function drawBars(containerId,data,color){
+  var c=document.getElementById(containerId);
+  if(!c) return;
+  var max=Math.max.apply(null,data.map(d=>d.v));
+  var h=100;
+  c.innerHTML=data.map(d=>`<div class="bar-col"><div class="bar-val" style="font-size:10px;color:var(--color-text-secondary)">${d.v}</div><div class="bar-box" style="height:${Math.round((d.v/max)*h)}px;background:${color}"></div><div class="bar-label">${d.l}</div></div>`).join('');
+}
+
+drawBars('custChart',[{l:'Oct',v:22.1},{l:'Nov',v:19.5},{l:'Dec',v:29.1},{l:'Jan',v:24.3},{l:'Feb',v:17.8},{l:'Mar',v:21.0}],'var(--blue)');
+drawBars('mgChart',[{l:'Oct',v:231},{l:'Nov',v:218},{l:'Dec',v:267},{l:'Jan',v:254},{l:'Feb',v:239},{l:'Mar',v:248}],'var(--teal)');
+
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAUvFgnCHXISgqa_207fqOeVcYMFFd_c-A",
+    authDomain: "water-billing-c5505.firebaseapp.com",
+    projectId: "water-billing-c5505",
+    storageBucket: "water-billing-c5505.firebasestorage.app",
+    messagingSenderId: "1086343095980",
+    appId: "1:1086343095980:web:2792526ba7435dc839a109",
+    measurementId: "G-630MSFGF76"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  function roleCollection(role){
+    return role === 'admin' ? 'admins' : role === 'manager' ? 'managers' : 'customers';
+  }
+
+  function roleLabel(role){
+    return role === 'admin' ? 'Administrator' : role === 'manager' ? 'Branch Manager' : 'Customer';
+  }
+
+  async function firebaseSignIn() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+
+    if (!email || !password) {
+      showToast('Please enter both email and password');
+      return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userId = userCredential.user.uid;
+      const role = currentRole === 'admin' ? 'admin' : currentRole === 'manager' ? 'manager' : 'customer';
+      const userDoc = await getDoc(doc(db, roleCollection(role), userId));
+
+      if (!userDoc.exists()) {
+        await signOut(auth);
+        showToast('No ' + roleLabel(role) + ' record found in Firebase. Check role selection.');
+        return;
+      }
+
+      showView(role);
+      showToast('Logged in as ' + roleLabel(role));
+      console.log('Firebase auth user:', userId, 'role:', role);
+    } catch (error) {
+      console.error('Login error', error);
+      if (error.code === 'auth/configuration-not-found') {
+        showToast('Firebase auth configuration is missing. Check your Firebase project settings and authorized domains.');
+      } else {
+        showToast('Login failed. Check your email and password.');
+      }
+    }
+  }
+
+  function splitFullName(fullName){
+    const parts = fullName.trim().split(' ').filter(Boolean);
+    return {
+      firstName: parts.shift() || '',
+      lastName: parts.join(' ') || ''
+    };
+  }
+
+  async function doRegister() {
+    const name = document.getElementById('registerName').value.trim();
+    const account = document.getElementById('registerAccount').value.trim();
+    const email = document.getElementById('registerEmail').value.trim();
+    const password = document.getElementById('registerPassword').value.trim();
+    const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
+
+    if (!name || !account || !email || !password || !confirmPassword) {
+      showToast('Please complete all registration fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showToast('Passwords do not match');
+      return;
+    }
+
+    try {
+      const role = currentRole === 'admin' ? 'admin' : currentRole === 'manager' ? 'manager' : 'customer';
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userId = userCredential.user.uid;
+      const { firstName, lastName } = splitFullName(name);
+      const userData = {
+        account_number: account,
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        role: role,
+        created_at: new Date().toISOString()
+      };
+
+      await setDoc(doc(db, 'users', userId), userData);
+      await setDoc(doc(db, roleCollection(role), userId), userData);
+
+      const backendResponse = await fetch(`${API_BASE}/api/customers`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          account_number: account,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          phone: '',
+          address: '',
+          district: ''
+        })
+      });
+
+      if (!backendResponse.ok) {
+        const backendError = await backendResponse.json().catch(()=>({error:'Unable to save customer in Postgres'}));
+        console.warn('Postgres save failed', backendError);
+        showToast('Registered in Firebase, but Postgres save failed. Contact admin.');
+      } else {
+        showToast('Registration successful. Please sign in.');
+      }
+
+      toggleRegister(false);
+      document.getElementById('loginEmail').value = email;
+      document.getElementById('loginPassword').value = '';
+    } catch (error) {
+      console.error('Registration error', error);
+      if (error.code === 'auth/configuration-not-found') {
+        showToast('Firebase auth configuration is missing. Add your app domain to Firebase authorized domains.');
+      } else {
+        showToast('Registration failed. Try again with a new email.');
+      }
+    }
+  }
+
+  async function savePayment() {
+    try {
+      const amount = document.getElementById('payAmt').value;
+      const method = document.getElementById('payMethod').value;
+      const customerId = 'WAS-00423';
+
+      if (!amount) {
+        alert('Enter amount');
+        return;
+      }
+
+      await addDoc(collection(db, 'payments'), {
+        customer_id: customerId,
+        amount: parseFloat(amount),
+        payment_method: method,
+        status: 'PAID',
+        date: new Date()
+      });
+
+      alert('✅ Payment saved to Firebase!');
+    } catch (error) {
+      console.error(error);
+      alert('❌ Error saving payment');
+    }
+  }
+
+  window.savePayment = savePayment;
+  window.doRegister = doRegister;
+  window.firebaseSignIn = firebaseSignIn;
+</script>
+</div>
+</body>
+</html>

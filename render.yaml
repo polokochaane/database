@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: wasco-water-billing
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PG_HOST
+        sync: false
+      - key: PG_PORT
+        value: "5432"
+      - key: PG_USER
+        sync: false
+      - key: PG_PASSWORD
+        sync: false
+      - key: PG_DATABASE
+        sync: false
+      - key: PG_SSL
+        value: "true"

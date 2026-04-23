@@ -40,7 +40,21 @@ A full-stack web application for managing water billing, customers, payments, an
 ```
 
 ## Deployment
-- Backend: Heroku/Vercel with Postgres add-on
-- Frontend: Static hosting (Netlify/GitHub Pages)
+- Render: deploy this repo using the included `render.yaml`
+- The Express app serves both the API and the static frontend from one Render web service
+
+### Render setup
+1. Push this repo to GitHub.
+2. In Render, create a new Blueprint and select the repo.
+3. Set these environment variables in Render:
+   - `PG_HOST`
+   - `PG_PORT`
+   - `PG_USER`
+   - `PG_PASSWORD`
+   - `PG_DATABASE`
+   - `PG_SSL=true`
+4. Deploy the `wasco-water-billing` service.
+
+The app now uses `process.env.PORT` on Render and serves the frontend from the backend service root.
 
 License: MIT

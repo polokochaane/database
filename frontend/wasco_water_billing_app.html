@@ -343,9 +343,27 @@
 <script>
 var currentRole='customer';
 var payStep=1;
-const API_BASE = window.location.protocol === 'file:'
-  ? 'http://127.0.0.1:5000'
-  : window.location.origin;
+// ===== DATABASE CONFIGURATION =====
+// This works with both Local PostgreSQL (development) and Neon PostgreSQL (production)
+const API_BASE = (() => {
+    // Check if we're in production (on Render)
+    const isProduction = window.location.hostname !== 'localhost' && 
+                        window.location.hostname !== '127.0.0.1' &&
+                        !window.location.hostname.includes('file');
+    
+    if (isProduction) {
+        // Production: Use same origin (Render serves both frontend and backend)
+        console.log('🌍 Production mode - using:', window.location.origin);
+        return window.location.origin;
+    } else {
+        // Development: Use local backend
+        console.log('💻 Development mode - using: http://localhost:5000');
+        return 'http://localhost:5000';
+    }
+})();
+
+// Make sure API_BASE is available globally
+window.API_BASE = API_BASE;
 
 function showView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
@@ -485,7 +503,7 @@ async function loadAdminCustomers(){
   }
 }
 
-async function saveAdminCustomer(){
+async function saveAdminCustomer() {
   const account = document.getElementById('addCustAccount').value.trim();
   const email = document.getElementById('addCustEmail').value.trim();
   const firstName = document.getElementById('addCustFirstName').value.trim();
@@ -495,21 +513,40 @@ async function saveAdminCustomer(){
   const phone = document.getElementById('addCustPhone').value.trim();
   const password = document.getElementById('addCustPassword').value.trim();
 
+  // Validate required fields
   if (!account || !email || !firstName || !lastName || !address || !district || !password) {
-    showToast('Complete all customer fields and password');
+    showToast('Please complete all customer fields and password');
+    return;
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showToast('Please enter a valid email address');
+    return;
+  }
+
+  // Validate phone format (optional but if provided, should be valid)
+  if (phone && !phone.match(/^[\+\d\s\-\(\)]{10,}$/)) {
+    showToast('Please enter a valid phone number');
     return;
   }
 
   try {
+    showToast('Saving customer...', 1000);
+
+    // Step 1: Save to PostgreSQL first (customer_id auto-generated)
     const customerPayload = {
       account_number: account,
-      email,
+      email: email,
       first_name: firstName,
       last_name: lastName,
-      phone,
-      address,
-      district
+      phone: phone || '',
+      address: address,
+      district: district
     };
+
+    console.log('Sending to PostgreSQL:', customerPayload);
 
     const backendRes = await fetch(`${API_BASE}/api/customers`, {
       method: 'POST',
@@ -519,32 +556,56 @@ async function saveAdminCustomer(){
 
     if (!backendRes.ok) {
       const errorData = await backendRes.json();
-      throw new Error(errorData.error || 'Could not save customer');
+      console.error('PostgreSQL error:', errorData);
+      throw new Error(errorData.error || 'Could not save customer to database');
     }
 
+    const pgResult = await backendRes.json();
+    console.log('PostgreSQL save successful:', pgResult);
+    showToast('Customer saved to database! Creating Firebase account...');
+
+    // Step 2: Create Firebase user
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const userId = userCredential.user.uid;
+    
+    // Step 3: Save user data to Firestore
     const userData = {
       account_number: account,
       first_name: firstName,
       last_name: lastName,
-      email,
-      phone,
-      address,
-      district,
+      email: email,
+      phone: phone || '',
+      address: address,
+      district: district,
       role: 'customer',
+      customer_id: pgResult.customer_id || pgResult[0]?.customer_id,
       created_at: new Date().toISOString()
     };
 
     await setDoc(doc(db, 'users', userId), userData);
     await setDoc(doc(db, 'customers', userId), userData);
 
+    // Success!
     closeAddCustomerModal();
-    showToast('Customer added to Postgres and Firebase');
-    loadAdminCustomers();
+    showToast(`✅ Customer ${firstName} ${lastName} added successfully!`);
+    loadAdminCustomers(); // Refresh the customer list
+    
+    // Reset form
+    resetAddCustomerForm();
+    
   } catch (error) {
-    console.error(error);
-    showToast('Unable to save customer: ' + (error.message || 'Try again'));
+    console.error('Error in saveAdminCustomer:', error);
+    
+    // Provide user-friendly error messages
+    if (error.code === 'auth/email-already-in-use') {
+      showToast('❌ This email is already registered in Firebase. Please use a different email.');
+    } else if (error.message.includes('duplicate key')) {
+      showToast('❌ This account number already exists. Please use a unique account number.');
+    } else if (error.message.includes('unique constraint')) {
+      showToast('❌ This email or account number already exists in the system.');
+    } else {
+      showToast('❌ Unable to save customer: ' + (error.message || 'Please try again'));
+    }
   }
 }
 

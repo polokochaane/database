@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WASCO Water Billing Portal</title>
+<div class="nav-buttons">
+  <button class="btn-outline" onclick="window.location.href='/app?view=login'">Log in</button>
+  <button class="btn-primary" onclick="window.location.href='/app?view=register'">Sign in</button>
+</div>
+<style>
+  :root {
+    --cyan: #00BCD4;
+    --cyan-light: #B2EBF2;
+    --cyan-dark: #0097A7;
+    --teal: #009688;
+    --teal-light: #B2DFDB;
+    --teal-dark: #00796B;
+    --white: #FFFFFF;
+    --off-white: #F5F7FA;
+    --gray-light: #E0E0E0;
+    --gray: #757575;
+    --dark: #263238;
+    --gradient-cyan: linear-gradient(135deg, #00BCD4 0%, #009688 100%);
+    --gradient-teal: linear-gradient(135deg, #009688 0%, #00BCD4 100%);
+    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+    --shadow-glow: 0 0 20px rgba(0, 188, 212, 0.3);
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--off-white);
+    color: var(--dark);
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* Animated Water Droplets */
+  .droplet {
+    position: fixed;
+    background: linear-gradient(135deg, rgba(0, 188, 212, 0.4), rgba(0, 150, 136, 0.3));
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: float 8s infinite ease-in-out;
+  }
+
+  .droplet::before {
+    content: '💧';
+    position: absolute;
+    font-size: 1.2em;
+    opacity: 0.6;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) translateX(0) rotate(0deg);
+      opacity: 0.3;
+    }
+    25% {
+      transform: translateY(-30px) translateX(10px) rotate(5deg);
+    }
+    50% {
+      transform: translateY(-60px) translateX(-10px) rotate(-5deg);
+      opacity: 0.6;
+    }
+    75% {
+      transform: translateY(-30px) translateX(15px) rotate(3deg);
+    }
+  }
+
+  /* Create multiple droplets with different sizes and positions */
+  .droplet-1 { width: 80px; height: 80px; top: 10%; left: 5%; animation-delay: 0s; animation-duration: 12s; }
+  .droplet-2 { width: 120px; height: 120px; top: 60%; right: 3%; animation-delay: 2s; animation-duration: 15s; }
+  .droplet-3 { width: 60px; height: 60px; bottom: 20%; left: 15%; animation-delay: 4s; animation-duration: 10s; }
+  .droplet-4 { width: 40px; height: 40px; top: 30%; right: 20%; animation-delay: 1s; animation-duration: 8s; }
+  .droplet-5 { width: 100px; height: 100px; bottom: 10%; right: 25%; animation-delay: 3s; animation-duration: 14s; }
+  .droplet-6 { width: 50px; height: 50px; top: 70%; left: 30%; animation-delay: 5s; animation-duration: 11s; }
+  .droplet-7 { width: 70px; height: 70px; top: 15%; right: 40%; animation-delay: 2.5s; animation-duration: 13s; }
+  .droplet-8 { width: 30px; height: 30px; bottom: 40%; left: 45%; animation-delay: 6s; animation-duration: 9s; }
+
+  /* Navigation */
+  .navbar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    background: var(--gradient-cyan);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .logo-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--gradient-teal);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: var(--shadow-glow);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: var(--dark);
+    font-weight: 500;
+    transition: color 0.3s;
+  }
+
+  .nav-links a:hover {
+    color: var(--cyan);
+  }
+
+  .nav-buttons {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .btn-outline {
+    padding: 0.5rem 1.25rem;
+    border: 2px solid var(--cyan);
+    background: transparent;
+    border-radius: 30px;
+    color: var(--cyan);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .btn-outline:hover {
+    background: var(--cyan);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-primary {
+    padding: 0.5rem 1.25rem;
+    background: var(--gradient-cyan);
+    border: none;
+    border-radius: 30px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Hero Section */
+  .hero {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-content {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: var(--cyan-light);
+    color: var(--cyan-dark);
+    border-radius: 50px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    background: var(--gradient-cyan);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero p {
+    font-size: 1.25rem;
+    color: var(--gray);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-large {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+  }
+
+  /* Coverage Section */
+  .coverage {
+    padding: 4rem 2rem;
+    background: white;
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .section-header h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--dark);
+  }
+
+  .section-header p {
+    color: var(--gray);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .coverage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .coverage-card {
+    text-align: center;
+    padding: 2rem;
+    background: var(--off-white);
+    border-radius: 20px;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .coverage-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+    background: white;
+  }
+
+  .coverage-icon {
+    width: 70px;
+    height: 70px;
+    background: var(--gradient-cyan);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 2rem;
+    box-shadow: var(--shadow-glow);
+  }
+
+  .coverage-card h3 {
+    margin-bottom: 0.5rem;
+    color: var(--dark);
+  }
+
+  .coverage-card p {
+    color: var(--gray);
+    font-size: 0.875rem;
+  }
+
+  /* Services Section */
+  .services {
+    padding: 4rem 2rem;
+    background: linear-gradient(135deg, var(--off-white) 0%, #E0F7FA 100%);
+    position: relative;
+    z-index: 1;
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .service-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    text-align: center;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .service-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 188, 212, 0.1), transparent);
+    transition: left 0.5s;
+  }
+
+  .service-card:hover::before {
+    left: 100%;
+  }
+
+  .service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .service-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--gradient-teal);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2.2rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .service-card h3 {
+    margin-bottom: 0.75rem;
+    color: var(--dark);
+  }
+
+  .service-card p {
+    color: var(--gray);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  /* CTA Section */
+  .cta {
+    padding: 4rem 2rem;
+    background: var(--gradient-cyan);
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta h2 {
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 1rem;
+  }
+
+  .cta p {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 2rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .btn-white {
+    background: white;
+    color: var(--cyan);
+    padding: 0.875rem 2rem;
+    border: none;
+    border-radius: 30px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .btn-white:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Footer */
+  .footer {
+    background: var(--dark);
+    color: white;
+    padding: 3rem 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+  }
+
+  .footer-section h4 {
+    margin-bottom: 1rem;
+    color: var(--cyan);
+  }
+
+  .footer-section a {
+    display: block;
+    color: var(--gray-light);
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    transition: color 0.3s;
+  }
+
+  .footer-section a:hover {
+    color: var(--cyan);
+  }
+
+  .footer-bottom {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--gray-light);
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 768px) {
+    .navbar {
+      flex-direction: column;
+    }
+    
+    .hero h1 {
+      font-size: 2rem;
+    }
+    
+    .hero p {
+      font-size: 1rem;
+    }
+    
+    .section-header h2 {
+      font-size: 1.75rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Animated Water Droplets -->
+<div class="droplet droplet-1"></div>
+<div class="droplet droplet-2"></div>
+<div class="droplet droplet-3"></div>
+<div class="droplet droplet-4"></div>
+<div class="droplet droplet-5"></div>
+<div class="droplet droplet-6"></div>
+<div class="droplet droplet-7"></div>
+<div class="droplet droplet-8"></div>
+
+<!-- Navigation -->
+<nav class="navbar">
+  <div class="logo">
+    <div class="logo-icon">💧</div>
+    <span>WASCO Portal</span>
+  </div>
+  <div class="nav-links">
+    <a href="#">Home</a>
+    <a href="#">Coverage</a>
+    <a href="#">Services</a>
+    <a href="#">Contact</a>
+    <div class="nav-buttons">
+      <button class="btn-outline" onclick="window.location.href='/login'">Log in</button>
+      <button class="btn-primary" onclick="window.location.href='/register'">Sign in</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">🚰 Lesotho's Trusted Water Provider</div>
+    <h1>Navigating Water Access,<br>Discovering Sustainable Solutions</h1>
+    <p>Stay ahead, stay informed, and transform water management into action with WASCO – where water resources are not just managed, they're harnessed for all.</p>
+    <div class="hero-buttons">
+      <button class="btn-primary btn-large" onclick="window.location.href='/register'">Start exploring</button>
+      <button class="btn-outline btn-large" onclick="window.location.href='/services'">View services</button>
+    </div>
+  </div>
+</section>
+
+<!-- Coverage Section -->
+<section class="coverage">
+  <div class="section-header">
+    <h2>Coverage Across Lesotho</h2>
+    <p>Bringing clean water and sanitation to every district</p>
+  </div>
+  <div class="coverage-grid">
+    <div class="coverage-card">
+      <div class="coverage-icon">🏔️</div>
+      <h3>10 Districts</h3>
+      <p>Complete coverage across all districts of Lesotho including Maseru, Leribe, Berea, Mafeteng, and more.</p>
+    </div>
+    <div class="coverage-card">
+      <div class="coverage-icon">🏘️</div>
+      <h3>50,000+ Customers</h3>
+      <p>Serving households, businesses, and institutions with reliable water supply.</p>
+    </div>
+    <div class="coverage-card">
+      <div class="coverage-icon">💧</div>
+      <h3>100% Compliance</h3>
+      <p>Meeting WHO water quality standards with regular testing and monitoring.</p>
+    </div>
+    <div class="coverage-card">
+      <div class="coverage-icon">♻️</div>
+      <h3>24/7 Support</h3>
+      <p>Round-the-clock customer service and emergency response teams.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Services Section -->
+<section class="services">
+  <div class="section-header">
+    <h2>Our Services</h2>
+    <p>Comprehensive water and sanitation solutions for all</p>
+  </div>
+  <div class="services-grid">
+    <div class="service-card" onclick="window.location.href='/services/water-supply'">
+      <div class="service-icon">💧</div>
+      <h3>Water Supply</h3>
+      <p>Reliable clean water supply to households and businesses across all 10 districts of Lesotho.</p>
+    </div>
+    <div class="service-card" onclick="window.location.href='/services/sewerage'">
+      <div class="service-icon">🌊</div>
+      <h3>Sewerage & Sanitation</h3>
+      <p>Comprehensive sewage management and sanitation infrastructure serving urban areas.</p>
+    </div>
+    <div class="service-card" onclick="window.location.href='/services/new-connection'">
+      <div class="service-icon">🔌</div>
+      <h3>New Connection</h3>
+      <p>Apply for new water or sewerage connections. Residential, commercial and institutional.</p>
+    </div>
+    <div class="service-card" onclick="window.location.href='/services/bill-enquiry'">
+      <div class="service-icon">📊</div>
+      <h3>Bill Enquiry</h3>
+      <p>Check outstanding water bill balances instantly with your account number.</p>
+    </div>
+    <div class="service-card" onclick="window.location.href='/services/payments'">
+      <div class="service-icon">💰</div>
+      <h3>Online Payment</h3>
+      <p>Pay water bills securely via EcoCash, bank card, or bank transfer.</p>
+    </div>
+    <div class="service-card" onclick="window.location.href='/services/leakage'">
+      <div class="service-icon">⚠️</div>
+      <h3>Report Leakage</h3>
+      <p>Report water pipe leakages or sewage overflows in your area instantly.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta">
+  <h2>Ready to Manage Your Water Account?</h2>
+  <p>Join thousands of satisfied customers who manage their water services online with WASCO.</p>
+  <button class="btn-white" onclick="window.location.href='/register'">Get Started →</button>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-section">
+      <h4>WASCO</h4>
+      <p>Water & Sewerage Company<br>Lesotho</p>
+    </div>
+    <div class="footer-section">
+      <h4>Quick Links</h4>
+      <a href="#">About Us</a>
+      <a href="#">Services</a>
+      <a href="#">Contact</a>
+      <a href="#">Help Center</a>
+    </div>
+    <div class="footer-section">
+      <h4>Contact</h4>
+      <a href="mailto:info@wasco.co.ls">info@wasco.co.ls</a>
+      <a href="tel:+26622312345">+266 2231 2345</a>
+      <a href="#">Maseru, Lesotho</a>
+    </div>
+    <div class="footer-section">
+      <h4>Follow Us</h4>
+      <a href="#">Facebook</a>
+      <a href="#">Twitter</a>
+      <a href="#">LinkedIn</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2026 WASCO - Water & Sewerage Company. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+  // Add smooth scroll behavior
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  });
+
+  // Add floating animation to droplets
+  const droplets = document.querySelectorAll('.droplet');
+  droplets.forEach((droplet, index) => {
+    droplet.style.animationDelay = `${index * 0.5}s`;
+  });
+</script>
+</body>
+</html>
